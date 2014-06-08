@@ -715,7 +715,7 @@ function bosa_new_product_field_default_fields() {
           'module' => 'bosa_product_field',
           'settings' => array(),
           'type' => 'bosa_product_field_formatter',
-          'weight' => '3',
+          'weight' => 13,
         ),
         'line_item' => array(
           'label' => 'above',
@@ -732,7 +732,7 @@ function bosa_new_product_field_default_fields() {
       ),
       'entity_type' => 'commerce_product',
       'field_name' => 'field_product_date_and_stock',
-      'label' => 'Produkt  dato og pladser',
+      'label' => 'Produkt dato og pladser',
       'required' => 0,
       'settings' => array(
         'entity_translation_sync' => FALSE,
@@ -987,7 +987,7 @@ KUN tal. Standard er "48"',
 KUN tal. Standard er "48"');
   t('Mailadresse der skal modtage deltagerlister (tomt hvis ingen)');
   t('Pris');
-  t('Produkt  dato og pladser');
+  t('Produkt dato og pladser');
   t('Sidste frist');
   t('Skal dette produkt have 2 priser (Pris for børn)?');
   t('Titel');
