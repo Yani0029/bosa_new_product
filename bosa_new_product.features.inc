@@ -19,3 +19,10 @@ function bosa_new_product_commerce_product_default_types() {
   );
   return $items;
 }
+
+/**
+ * Implements hook_views_api().
+ */
+function bosa_new_product_views_api() {
+  return array("version" => "3.0");
+}

@@ -5,3 +5,188 @@
  */
 
 include_once 'bosa_new_product.features.inc';
+
+/**
+ * Implements hook_menu()
+ */
+function bosa_new_product_menu() {
+  $items = array();
+  // Product attendee page
+  $items['bosa/voucher/bosa_product/all'] = array(
+    'page callback' => 'bosa_voucher_bosa_product_page',
+    'title' => 'BOSA tickets',
+    'description' => '',
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+function bosa_voucher_bosa_product_page(){
+  global $user;
+
+  if(!$user->uid) {
+    return drupal_render(drupal_get_form('user_login_block'));
+  }
+
+  return '<a href="/bosa/voucher/product/all"><h3>&lt;&lt; See for other product</h3></a>' .drupal_render(drupal_get_form('bosa_product_page_all'));
+  //.views_embed_view('bosa_voucher_new','block');
+
+}
+function bosa_product_page_all($form, &$form_state){
+  $css = '
+    .bosa_product_fieldset {
+      background: #FFF; padding: 23px 20px;
+      font-family: "Soho W02 Regular", "Cambria W10 Regular", "Cambria W02 Regular";font-size: 13px; margin: 0 0 15px 0;}
+    .bosa_product_fields {float: left; clear: none;margin: 0; padding-right:30px;}
+    .bosa_product_fields .form-item-date-from-date label, .bosa_product_fields .form-item-date-to-date label {display:none;}
+    .bosa_product_fields .form-item-product-title { margin-top: 0px; margin-bottom: 0px;}
+    .bosa_product_fields .date-padding {padding: 0px 0px;}
+    .bosa_product_fields .description {display: none;}
+    .bosa_product_search_button {margin: 18px 0 0 0;}
+    #bosa-product-page-all .p-title {width:40%;}
+    #bosa-product-page-all .p-sku {width:30%;}
+    #bosa-product-page-all .p-date {width:30%;}
+  ';
+  drupal_add_css($css,$options['type'] = 'inline');
+  if(isset($form_state['values'])){
+    // Generate table contents if the form has been submitted.
+    $from = $form_state['values']['date_from'];
+    $to = $form_state['values']['date_to'];
+
+    $title = $form_state['values']['product_title'];
+
+    $uid = FALSE;
+
+    // Format dates
+    $from = date('Y-m-d H:i:s', strtotime($from));
+    $to = date('Y-m-d H:i:s', strtotime($to));
+
+    $statement = bosa_vocher_new_product_get_table($from, $to, $title);
+  }
+
+  // Table header.
+  $header = array(
+    'Titel' => array('data'=> 'Titel','class' => array('p-title')),
+    'Varenummer' => array('data'=> 'Varenummer','class' => array('p-sku')),
+    'Produkt datoerne'=> array('data'=> 'Dato','class' => array('p-date')),
+  );
+  $form['form_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#attributes' => array('class' => array('bosa_product_fieldset')),
+  );
+
+  $form['form_fieldset']['product_title'] = array(
+    '#title' => t('Title'),
+    '#size' => 30,
+    '#type' => 'textfield',
+    '#attributes' => array('class' => array('bosa_product_fields')),
+    '#prefix' => '<div class="bosa_product_fields">',
+    '#suffix' => '</div>',
+  );
+
+  $form['form_fieldset']['date_from'] = array(
+    '#title' => t('Fra'),
+        '#size' => 30,
+    '#type' => 'date_popup',
+    '#date_format' => 'd/m/Y',
+    '#date_year_range' => '0:+3',
+    '#default_value' => NULL,
+    '#attributes' => array('class' => array('bosa_product_fields')),
+    '#prefix' => '<div class="bosa_product_fields">',
+    '#suffix' => '</div>',
+  );
+
+  $form['form_fieldset']['date_to'] = array(
+    '#title' => t('Til'),
+    '#size' => 30,
+    '#type' => 'date_popup',
+    '#date_format' => 'd/m/Y',
+    '#date_year_range' => '0:+3',
+    '#prefix' => '<div class="bosa_product_fields">',
+    '#suffix' => '</div>',
+    '#default_value' => NULL,
+    '#attributes' => array('class' => array('bosa_product_fields')),
+  );
+
+  $form['form_fieldset']['submit'] = array(
+    '#size' => 30,
+    '#value' => t('Search'),
+    '#prefix' => '<div class="bosa_product_fields bosa_product_search_button">',
+    '#type' => 'submit',
+    '#suffix' => '</div>',
+  );
+  if (isset($form_state['values'])) {
+    $form['statement'] = array(
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $statement,
+      '#empty' => 'Opdater s¿gekriterier',
+    );
+  }
+  else {
+    $form['view_embed'] = array (
+      '#type' => 'item',
+      '#markup' => views_embed_view('bosa_voucher_new','block'),
+    );
+  }
+  return $form;
+}
+/**
+ * implements hook_form_submit()
+ */
+function bosa_product_page_all_submit($form, &$form_state){
+  // Rebuild form on submit.
+  $form_state['rebuild'] = TRUE;
+
+}
+
+function bosa_vocher_new_product_get_table($from = NULL,$to = NULL,$title = NULL){
+  global $user;
+  $sql = "SELECT DISTINCT c.`product_id` AS product_id, c.`title` AS product_title, c.`sku` AS sku
+          FROM `commerce_product` c
+          LEFT JOIN `field_data_field_product_date_and_stock` f ON c.`product_id` = f.`entity_id`
+          AND (f.`entity_type` = 'commerce_product' AND f.`deleted` = '0')
+          WHERE c.`type` IN  ('bosa_produkt')";
+  if ($from > '1970-01-01 01:00:00') {
+    $sql .= " AND (f.`field_product_date_and_stock_product_date` >= '$from')";
+  }
+  if($to > '1970-01-01 01:00:00') {
+    $sql .= " AND (f.`field_product_date_and_stock_product_date` <= '$to')";
+  }
+  if($title) {
+    $sql .= " AND (c.title LIKE '%$title%')";
+  }
+  $query = db_query($sql);
+  $result = $query->fetchAll();
+  if(empty($result)){
+    return array(array('Ingen resultater'));
+  }
+  foreach($result as $dbrow){
+    $product = commerce_product_load($dbrow->product_id);
+    $date_stock = field_get_items('commerce_product', $product, 'field_product_date_and_stock');
+    $dates = "";
+    // Check for permissions if bosa_products module is installed
+    if(function_exists('bosa_products_permissions_check')){
+      if(!bosa_products_permissions_check($product->product_id, $user->uid)){
+        continue;
+      }
+    }
+    foreach ($date_stock as $delta => $item) {
+      if ($item['product_date'] < "1970-01-02") {
+        $date_delta = 'Se deltagerlist';
+      }
+      else {
+        $date_delta = date('d/m/Y H:i', strtotime($item['product_date']));
+      }
+      $dates .= '<a style ="text-decoration: underline;" href="/da/bosa/voucher/product/' . $product->product_id .'/'. $delta . '">'. $date_delta . '</a><br/>';
+    }
+    $row[] = array(
+      'title' => $product->title,
+      'sku' => $dbrow->sku,
+      'dates' => $dates,
+    );
+  }
+  return $row;
+}
