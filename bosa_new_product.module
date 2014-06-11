@@ -19,10 +19,28 @@ function bosa_new_product_menu() {
     'type' => MENU_NORMAL_ITEM,
     'access arguments' => array('access content'),
   );
-
+  $items['admin/config/bosa_new_product'] = array(
+    'page callback' => 'bosa_new_product_update',
+    'title' => 'BOSA opdatering',
+    'description' => '',
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('administer site configuration'),
+  );
   return $items;
 }
-
+function bosa_new_product_update(){
+  $sql = "SELECT `nid` FROM `node` WHERE `type` = 'offer' AND `status` = 1";
+  $result = db_query($sql)->fetchAll();
+  if ($result) {
+    foreach ($result as $dbrow) {
+      $node = node_load($dbrow->nid);
+      if(!isset($node->field_startdato['und'])) {
+        $node->field_startdato['und'][0]['value'] = date('Y-m-d H:i:s');
+        node_save($node);
+      }
+    }
+  }
+}
 function bosa_voucher_bosa_product_page(){
   global $user;
 
