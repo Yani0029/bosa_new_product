@@ -35,7 +35,7 @@ function bosa_new_product_update(){
     foreach ($result as $dbrow) {
       $node = node_load($dbrow->nid);
       if(!isset($node->field_startdato['und'])) {
-        $node->field_startdato['und'][0]['value'] = date('Y-m-d H:i:s');
+        $node->field_startdato['und'][0]['value'] = date('Y-m-d H:i:s', $node->created);
         node_save($node);
       }
     }
